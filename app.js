@@ -503,14 +503,15 @@ if (typeof window !== 'undefined') {
       const users = snap.val() || {};
       approveList.innerHTML = Object.entries(users).map(([uid, u]) => {
         const p = u.profile || {};
-        // 이름 또는 이메일이 없으면 표시하지 않음
         if (!p.name || !p.email) return '';
-        if (p.approved) return '';
-        return `<li style='margin-bottom:0.7em;'>
-          <b>${p.name}</b> (${p.email})<br>전화: ${p.phone||''}
-          <button class='btn blue' onclick='approveUser("${uid}")'>승인</button>
-        </li>`;
-      }).join('') || '<li>승인 대기 회원 없음</li>';
+        let btns = '';
+        if (p.approved) {
+          btns = `<button class='btn' style='background:#f44336;color:#fff;' onclick='deleteUser("${uid}")'>삭제</button>`;
+        } else {
+          btns = `<button class='btn blue' onclick='approveUser("${uid}")'>승인</button> <button class='btn' style='background:#f44336;color:#fff;' onclick='deleteUser("${uid}")'>삭제</button>`;
+        }
+        return `<li style='margin-bottom:0.7em;'><b>${p.name}</b> (${p.email})<br>전화: ${p.phone||''}<br>${btns}</li>`;
+      }).join('') || '<li>회원 없음</li>';
     });
   };
   window.approveUser = async function(uid) {
@@ -522,6 +523,13 @@ if (typeof window !== 'undefined') {
       alert('승인 완료!');
       showApproveModal();
     }
+  };
+  window.deleteUser = async function(uid) {
+    if (!confirm('정말로 해당 회원을 삭제하시겠습니까?\n(회원의 모든 데이터가 삭제됩니다)')) return;
+    const userRef = dbRef(db, `users/${uid}`);
+    await dbRemove(userRef);
+    alert('삭제 완료!');
+    showApproveModal();
   };
   document.getElementById('approve-close').onclick = () => {
     document.getElementById('approve-modal').style.display = 'none';
