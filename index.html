@@ -43,7 +43,7 @@
     </section>
   </main>
   <footer>
-    <p>Made by <span class="emoji">💙</span> CowboybibimbapW</p>
+    <p>Made by <span class="emoji">💙</span> Cowboybibimbap</p>
   </footer>
   <div id="maint-modal" class="modal" style="display:none;">
     <div class="modal-content">
@@ -55,11 +55,15 @@
           <option value="브레이크">브레이크</option>
           <option value="엔진오일">엔진오일</option>
           <option value="타이어">타이어</option>
+          <option value="사고 수리">사고 수리</option>
           <option value="기타">기타</option>
         </select>
       </label><br>
       <label>비용(원)<br><input type="number" id="maint-cost" min="0" step="1000"></label><br>
       <label>정비 내용<br><input type="text" id="maint-desc" maxlength="50"></label><br>
+      <label>정비소 이름<br><input type="text" id="maint-shop" maxlength="30"></label><br>
+      <label>영수증 업로드<br><input type="file" id="maint-receipt" accept="image/*,application/pdf"></label><br>
+      <label>기타 내용<br><input type="text" id="maint-etc" maxlength="100"></label><br>
       <div style="margin-top:1em;">
         <button class="btn blue" id="maint-save">저장</button>
         <button class="btn" id="maint-cancel">취소</button>
@@ -96,6 +100,7 @@
       <label>사고 내용<br><input type="text" id="acc-desc" maxlength="100"></label><br>
       <label>사고지 주소<br><input type="text" id="acc-address" maxlength="100"></label><br>
       <div id="acc-map-preview" style="margin:0.5em 0;"></div>
+      <label>기타 내용<br><input type="text" id="acc-etc" maxlength="100"></label><br>
       <div style="margin-top:1em;">
         <button class="btn blue" id="accident-save">저장</button>
         <button class="btn" id="accident-cancel">취소</button>

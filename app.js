@@ -105,32 +105,42 @@ function renderMaintTab(data) {
     <ul>${Object.entries(data).map(([key, m])=>{
       const d = daysLeft(m.date);
       const urgent = d <= 30 ? ` <span style='color:red;font-weight:bold;'>⚠️ ${d}일 남음</span>` : '';
-      return `<li>${m.date} <b>[${m.type||'기타'}]</b> - ${m.desc} <span style='color:#1976d2;'>${m.cost ? m.cost+'원' : ''}</span>${urgent} <button class='btn' onclick='removeMaint("${key}")'>삭제</button></li>`;
+      return `<li>${m.date} <b>[${m.type||'기타'}]</b> - ${m.desc} <span style='color:#1976d2;'>${m.cost ? m.cost+'원' : ''}</span> ${m.shop ? `<span style='color:#888;'>@${m.shop}</span>` : ''} ${m.receipt ? `<a href='${m.receipt}' target='_blank'>영수증</a>` : ''} ${m.etc ? `<span style='color:#888;'>${m.etc}</span>` : ''}${urgent} <button class='btn' onclick='removeMaint("${key}")'>삭제</button></li>`;
     }).join('')}</ul>
     <button class='btn blue' id='add-maint-btn'>정비 추가</button>
     <div style='font-size:0.95em;color:#888;margin-top:0.5em;'>만기 30일 이내 항목은 <span style='color:red;'>강조</span>됩니다.<br>이메일 알림은 추후 설정에서 활성화할 수 있습니다.</div>`;
   document.getElementById('add-maint-btn').onclick = () => {
     document.getElementById('maint-modal').style.display = 'flex';
-  };
-  document.getElementById('maint-cancel').onclick = () => {
-    document.getElementById('maint-modal').style.display = 'none';
-  };
-  document.getElementById('maint-save').onclick = async () => {
-    const date = document.getElementById('maint-date').value;
-    const type = document.getElementById('maint-type').value;
-    const cost = document.getElementById('maint-cost').value;
-    const desc = document.getElementById('maint-desc').value;
-    if (!date || !desc) {
-      alert('날짜와 내용을 입력하세요!');
-      return;
-    }
-    await addCarData(currentUser.uid, currentCar.id, 'maintenances', { date, type, cost, desc });
-    document.getElementById('maint-modal').style.display = 'none';
-    // 입력값 초기화
-    document.getElementById('maint-date').value = '';
-    document.getElementById('maint-type').value = '정기점검';
-    document.getElementById('maint-cost').value = '';
-    document.getElementById('maint-desc').value = '';
+    document.getElementById('maint-save').onclick = async () => {
+      const date = document.getElementById('maint-date').value;
+      const type = document.getElementById('maint-type').value;
+      const cost = document.getElementById('maint-cost').value;
+      const desc = document.getElementById('maint-desc').value;
+      const shop = document.getElementById('maint-shop').value;
+      const receiptInput = document.getElementById('maint-receipt');
+      const etc = document.getElementById('maint-etc').value;
+      let receiptUrl = '';
+      if (receiptInput.files[0]) {
+        const path = `users/${currentUser.uid}/cars/${currentCar.id}/maintenances/${Date.now()}_receipt_${receiptInput.files[0].name}`;
+        receiptUrl = await uploadFile(path, receiptInput.files[0]);
+      }
+      if (!date || !desc) {
+        alert('날짜와 내용을 입력하세요!');
+        return;
+      }
+      await addCarData(currentUser.uid, currentCar.id, 'maintenances', { date, type, cost, desc, shop, receipt: receiptUrl, etc });
+      document.getElementById('maint-modal').style.display = 'none';
+      // 입력값 초기화
+      document.getElementById('maint-date').value = '';
+      document.getElementById('maint-type').value = '정기점검';
+      document.getElementById('maint-cost').value = '';
+      document.getElementById('maint-desc').value = '';
+      document.getElementById('maint-shop').value = '';
+      document.getElementById('maint-receipt').value = '';
+    };
+    document.getElementById('maint-cancel').onclick = () => {
+      document.getElementById('maint-modal').style.display = 'none';
+    };
   };
 }
 window.removeMaint = async function(key) {
@@ -190,84 +200,88 @@ function renderAccidentTab(data) {
     <button class='btn blue' id='add-accident-btn'>사고 추가</button>`;
   document.getElementById('add-accident-btn').onclick = () => {
     document.getElementById('accident-modal').style.display = 'flex';
-  };
-  document.getElementById('accident-cancel').onclick = () => {
-    document.getElementById('accident-modal').style.display = 'none';
-  };
-  // 지도 미리보기
-  document.getElementById('acc-address').oninput = function() {
-    const addr = this.value;
-    const mapDiv = document.getElementById('acc-map-preview');
-    if (addr) {
-      mapDiv.innerHTML = `<img src='https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=200x100&markers=color:red|${encodeURIComponent(addr)}&key=AIzaSyB396sXp7Qo8oIkwm6ASc-qgL_2IhpDBR8'/>`;
-    } else {
-      mapDiv.innerHTML = '';
-    }
-  };
-  // 사진 미리보기
-  document.getElementById('acc-other-license').onchange = function() {
-    const file = this.files[0];
-    const preview = this.parentNode;
-    if (file) {
-      const url = URL.createObjectURL(file);
-      if (!preview.querySelector('img')) {
+    // 지도 미리보기, 사진 미리보기 등 기존 바인딩 유지
+    document.getElementById('acc-address').oninput = function() {
+      const addr = this.value;
+      const mapDiv = document.getElementById('acc-map-preview');
+      if (addr) {
+        mapDiv.innerHTML = `<img src='https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=200x100&markers=color:red|${encodeURIComponent(addr)}&key=AIzaSyB396sXp7Qo8oIkwm6ASc-qgL_2IhpDBR8'/>`;
+      } else {
+        mapDiv.innerHTML = '';
+      }
+    };
+    // 사진 미리보기
+    document.getElementById('acc-other-license').onchange = function() {
+      const file = this.files[0];
+      const preview = this.parentNode;
+      if (file) {
+        const url = URL.createObjectURL(file);
+        if (!preview.querySelector('img')) {
+          const img = document.createElement('img');
+          img.className = 'preview';
+          img.src = url;
+          preview.appendChild(img);
+        } else {
+          preview.querySelector('img').src = url;
+        }
+      }
+    };
+    document.getElementById('acc-car-photos').onchange = function() {
+      const files = Array.from(this.files).slice(0,10);
+      const preview = this.parentNode;
+      // 기존 미리보기 삭제
+      preview.querySelectorAll('img.preview').forEach(img=>img.remove());
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
         const img = document.createElement('img');
         img.className = 'preview';
         img.src = url;
         preview.appendChild(img);
-      } else {
-        preview.querySelector('img').src = url;
+      });
+    };
+    // 저장 버튼 이벤트 안전하게 바인딩
+    document.getElementById('accident-save').onclick = async () => {
+      const myName = document.getElementById('acc-my-name').value;
+      const myPhone = document.getElementById('acc-my-phone').value;
+      const otherName = document.getElementById('acc-other-name').value;
+      const otherPhone = document.getElementById('acc-other-phone').value;
+      const otherAddr = document.getElementById('acc-other-addr').value;
+      const desc = document.getElementById('acc-desc').value;
+      const address = document.getElementById('acc-address').value;
+      const etc = document.getElementById('acc-etc').value;
+      const date = new Date().toISOString().slice(0,10);
+      // 필수값 체크
+      if (!myName || !myPhone || !otherName || !otherPhone || !desc || !address) {
+        alert('필수 항목을 모두 입력하세요!');
+        return;
       }
-    }
-  };
-  document.getElementById('acc-car-photos').onchange = function() {
-    const files = Array.from(this.files).slice(0,10);
-    const preview = this.parentNode;
-    // 기존 미리보기 삭제
-    preview.querySelectorAll('img.preview').forEach(img=>img.remove());
-    files.forEach(file => {
-      const url = URL.createObjectURL(file);
-      const img = document.createElement('img');
-      img.className = 'preview';
-      img.src = url;
-      preview.appendChild(img);
-    });
-  };
-  document.getElementById('accident-save').onclick = async () => {
-    const myName = document.getElementById('acc-my-name').value;
-    const myPhone = document.getElementById('acc-my-phone').value;
-    const otherName = document.getElementById('acc-other-name').value;
-    const otherPhone = document.getElementById('acc-other-phone').value;
-    const otherAddr = document.getElementById('acc-other-addr').value;
-    const desc = document.getElementById('acc-desc').value;
-    const address = document.getElementById('acc-address').value;
-    const date = new Date().toISOString().slice(0,10);
-    // 사진 업로드
-    let otherLicenseUrl = '';
-    const otherLicenseFile = document.getElementById('acc-other-license').files[0];
-    if (otherLicenseFile) {
-      const path = `users/${currentUser.uid}/cars/${currentCar.id}/accidents/${Date.now()}_license.jpg`;
-      otherLicenseUrl = await uploadFile(path, otherLicenseFile);
-    }
-    let carPhotosUrls = [];
-    const carPhotoFiles = Array.from(document.getElementById('acc-car-photos').files).slice(0,10);
-    for (let i=0; i<carPhotoFiles.length; i++) {
-      const path = `users/${currentUser.uid}/cars/${currentCar.id}/accidents/${Date.now()}_car_${i}.jpg`;
-      const url = await uploadFile(path, carPhotoFiles[i]);
-      carPhotosUrls.push(url);
-    }
-    await addCarData(currentUser.uid, currentCar.id, 'accidents', {
-      myName, myPhone, otherName, otherPhone, otherAddr, otherLicense: otherLicenseUrl, carPhotos: carPhotosUrls, desc, address, date
-    });
-    document.getElementById('accident-modal').style.display = 'none';
-    // 입력값 초기화
-    [
-      'acc-my-name','acc-my-phone','acc-other-name','acc-other-phone','acc-other-addr','acc-desc','acc-address'
-    ].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('acc-other-license').value = '';
-    document.getElementById('acc-car-photos').value = '';
-    document.getElementById('acc-map-preview').innerHTML = '';
-    document.querySelectorAll('#acc-other-license + img, #acc-car-photos + img').forEach(img=>img.remove());
+      // 사진 업로드
+      let otherLicenseUrl = '';
+      const otherLicenseFile = document.getElementById('acc-other-license').files[0];
+      if (otherLicenseFile) {
+        const path = `users/${currentUser.uid}/cars/${currentCar.id}/accidents/${Date.now()}_license.jpg`;
+        otherLicenseUrl = await uploadFile(path, otherLicenseFile);
+      }
+      let carPhotosUrls = [];
+      const carPhotoFiles = Array.from(document.getElementById('acc-car-photos').files).slice(0,10);
+      for (let i=0; i<carPhotoFiles.length; i++) {
+        const path = `users/${currentUser.uid}/cars/${currentCar.id}/accidents/${Date.now()}_car_${i}.jpg`;
+        const url = await uploadFile(path, carPhotoFiles[i]);
+        carPhotosUrls.push(url);
+      }
+      await addCarData(currentUser.uid, currentCar.id, 'accidents', {
+        myName, myPhone, otherName, otherPhone, otherAddr, otherLicense: otherLicenseUrl, carPhotos: carPhotosUrls, desc, address, etc, date
+      });
+      document.getElementById('accident-modal').style.display = 'none';
+      // 입력값 초기화
+      [
+        'acc-my-name','acc-my-phone','acc-other-name','acc-other-phone','acc-other-addr','acc-desc','acc-address','acc-etc'
+      ].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('acc-other-license').value = '';
+      document.getElementById('acc-car-photos').value = '';
+      document.getElementById('acc-map-preview').innerHTML = '';
+      document.querySelectorAll('#acc-other-license + img, #acc-car-photos + img').forEach(img=>img.remove());
+    };
   };
 }
 window.removeAccident = async function(key) {
@@ -291,23 +305,27 @@ function renderDocsTab(data) {
     <button class='btn blue' id='add-doc-btn'>문서 추가</button>`;
   document.getElementById('add-doc-btn').onclick = () => {
     document.getElementById('doc-modal').style.display = 'flex';
-  };
-  document.getElementById('doc-cancel').onclick = () => {
-    document.getElementById('doc-modal').style.display = 'none';
-  };
-  document.getElementById('doc-save').onclick = async () => {
-    const fileInput = document.getElementById('doc-file');
-    const expire = document.getElementById('doc-expire').value;
-    let fileUrl = '';
-    if (fileInput.files[0]) {
-      const path = `users/${currentUser.uid}/cars/${currentCar.id}/documents/${Date.now()}_${fileInput.files[0].name}`;
-      fileUrl = await uploadFile(path, fileInput.files[0]);
-    }
-    const uploader = currentUser.displayName || currentUser.email || 'Unknown';
-    await addCarData(currentUser.uid, currentCar.id, 'documents', { file: fileUrl, expire, uploader });
-    document.getElementById('doc-modal').style.display = 'none';
-    fileInput.value = '';
-    document.getElementById('doc-expire').value = '';
+    document.getElementById('doc-save').onclick = async () => {
+      const fileInput = document.getElementById('doc-file');
+      const expire = document.getElementById('doc-expire').value;
+      if (!fileInput.files[0] || !expire) {
+        alert('레조 서류 파일과 만기날짜를 모두 입력하세요!');
+        return;
+      }
+      let fileUrl = '';
+      if (fileInput.files[0]) {
+        const path = `users/${currentUser.uid}/cars/${currentCar.id}/documents/${Date.now()}_${fileInput.files[0].name}`;
+        fileUrl = await uploadFile(path, fileInput.files[0]);
+      }
+      const uploader = currentUser.displayName || currentUser.email || 'Unknown';
+      await addCarData(currentUser.uid, currentCar.id, 'documents', { file: fileUrl, expire, uploader });
+      document.getElementById('doc-modal').style.display = 'none';
+      fileInput.value = '';
+      document.getElementById('doc-expire').value = '';
+    };
+    document.getElementById('doc-cancel').onclick = () => {
+      document.getElementById('doc-modal').style.display = 'none';
+    };
   };
 }
 window.removeDoc = async function(key) {
@@ -427,19 +445,25 @@ if (typeof window !== 'undefined') {
       const users = snap.val() || {};
       approveList.innerHTML = Object.entries(users).map(([uid, u]) => {
         const p = u.profile || {};
+        // 이름 또는 이메일이 없으면 표시하지 않음
+        if (!p.name || !p.email) return '';
         if (p.approved) return '';
         return `<li style='margin-bottom:0.7em;'>
-          <b>${p.name||''}</b> (${p.email||''})<br>전화: ${p.phone||''}
+          <b>${p.name}</b> (${p.email})<br>전화: ${p.phone||''}
           <button class='btn blue' onclick='approveUser("${uid}")'>승인</button>
         </li>`;
       }).join('') || '<li>승인 대기 회원 없음</li>';
     });
   };
-  window.approveUser = function(uid) {
+  window.approveUser = async function(uid) {
     const userInfoRef = dbRef(db, `users/${uid}/profile`);
-    dbSet(userInfoRef, { ...window.lastUserProfiles[uid], approved: true });
-    alert('승인 완료!');
-    showApproveModal();
+    const snap = await get(userInfoRef);
+    if (snap.exists()) {
+      const profile = snap.val();
+      await dbSet(userInfoRef, { ...profile, approved: true });
+      alert('승인 완료!');
+      showApproveModal();
+    }
   };
   document.getElementById('approve-close').onclick = () => {
     document.getElementById('approve-modal').style.display = 'none';
