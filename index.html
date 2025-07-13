@@ -113,6 +113,28 @@
       </div>
     </div>
   </div>
+  <div id="signup-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>회원가입</h3>
+      <label>이메일<br><input type="email" id="signup-email" maxlength="40"></label><br>
+      <label>이름<br><input type="text" id="signup-name" maxlength="20"></label><br>
+      <label>전화번호<br><input type="tel" id="signup-phone" maxlength="20"></label><br>
+      <label>비밀번호<br><input type="password" id="signup-password" maxlength="30"></label><br>
+      <div style="margin-top:1em;">
+        <button class="btn blue" id="signup-save">가입</button>
+        <button class="btn" id="signup-cancel">취소</button>
+      </div>
+    </div>
+  </div>
+  <div id="approve-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:400px;max-height:90vh;overflow-y:auto;">
+      <h3>회원 승인 관리</h3>
+      <ul id="approve-list"></ul>
+      <div style="margin-top:1em;">
+        <button class="btn" id="approve-close">닫기</button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
 </body>

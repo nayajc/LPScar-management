@@ -1,7 +1,7 @@
 import { auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase.js';
 import { db, addCarData, removeCarData, getCarData } from './firebase.js';
 import { storage, uploadFile } from './firebase.js';
-import { ref as dbRef, push as dbPush, set as dbSet, remove as dbRemove, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { ref as dbRef, push as dbPush, set as dbSet, remove as dbRemove, onValue, get } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
 const ADMIN_EMAILS = ['nayajcsong@gmail.com', 'jknetwork001@gmail.com'];
 
@@ -320,6 +320,9 @@ function showApp(user) {
   loginSection.style.display = 'none';
   appSection.style.display = 'block';
   userInfo.innerHTML = `<span class="emoji">👤</span> ${user.displayName || user.email} <button class="btn" id="logout-btn">로그아웃</button>`;
+  if (ADMIN_EMAILS.includes(user.email)) {
+    userInfo.innerHTML += ` <button class="btn blue" onclick="showApproveModal()">회원 승인</button>`;
+  }
   loadCarsFromDB();
   document.getElementById('logout-btn').onclick = () => signOut(auth);
 }
@@ -358,21 +361,52 @@ emailLoginBtn.addEventListener('click', async () => {
   }
 });
 
-emailSignupBtn.addEventListener('click', async () => {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
+// 회원가입 모달 표시
+emailSignupBtn.addEventListener('click', () => {
+  document.getElementById('signup-modal').style.display = 'flex';
+});
+document.getElementById('signup-cancel').onclick = () => {
+  document.getElementById('signup-modal').style.display = 'none';
+};
+document.getElementById('signup-save').onclick = async () => {
+  const email = document.getElementById('signup-email').value.trim();
+  const name = document.getElementById('signup-name').value.trim();
+  const phone = document.getElementById('signup-phone').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!email || !name || !phone || !password) {
+    alert('모든 항목을 입력하세요!');
+    return;
+  }
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    // 이름/전화번호 DB에 저장
+    const user = userCred.user;
+    const userInfoRef = dbRef(db, `users/${user.uid}/profile`);
+    await dbSet(userInfoRef, { name, phone, email, approved: false });
     alert('회원가입 성공! 이제 로그인하세요.');
+    document.getElementById('signup-modal').style.display = 'none';
+    // 입력값 초기화
+    document.getElementById('signup-email').value = '';
+    document.getElementById('signup-name').value = '';
+    document.getElementById('signup-phone').value = '';
+    document.getElementById('signup-password').value = '';
   } catch (e) {
     alert('회원가입 실패: ' + e.message);
   }
-});
+};
 
 // 로그인 상태 감지 시 currentUser 저장
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
+    // 승인 여부 확인
+    const userInfoRef = dbRef(db, `users/${user.uid}/profile`);
+    const snap = await get(userInfoRef);
+    if (snap.exists() && snap.val().approved === false) {
+      alert('관리자 승인 대기 중입니다. 승인 후 이용 가능합니다.');
+      await signOut(auth);
+      return;
+    }
     logUserLogin(user);
     showApp(user);
   } else {
@@ -380,3 +414,34 @@ onAuthStateChanged(auth, user => {
     showLogin();
   }
 });
+
+// 관리자 승인 UI
+if (typeof window !== 'undefined') {
+  window.showApproveModal = function() {
+    document.getElementById('approve-modal').style.display = 'flex';
+    const approveList = document.getElementById('approve-list');
+    approveList.innerHTML = '<li>로딩중...</li>';
+    // 전체 회원 목록 불러오기
+    const usersRef = dbRef(db, 'users');
+    get(usersRef).then(snap => {
+      const users = snap.val() || {};
+      approveList.innerHTML = Object.entries(users).map(([uid, u]) => {
+        const p = u.profile || {};
+        if (p.approved) return '';
+        return `<li style='margin-bottom:0.7em;'>
+          <b>${p.name||''}</b> (${p.email||''})<br>전화: ${p.phone||''}
+          <button class='btn blue' onclick='approveUser("${uid}")'>승인</button>
+        </li>`;
+      }).join('') || '<li>승인 대기 회원 없음</li>';
+    });
+  };
+  window.approveUser = function(uid) {
+    const userInfoRef = dbRef(db, `users/${uid}/profile`);
+    dbSet(userInfoRef, { ...window.lastUserProfiles[uid], approved: true });
+    alert('승인 완료!');
+    showApproveModal();
+  };
+  document.getElementById('approve-close').onclick = () => {
+    document.getElementById('approve-modal').style.display = 'none';
+  };
+}
