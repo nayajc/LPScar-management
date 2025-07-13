@@ -164,6 +164,53 @@ footer {
   margin-top: 1.2em;
 }
 
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.13);
+  padding: 2em 1.5em 1.5em 1.5em;
+  min-width: 270px;
+  max-width: 90vw;
+  text-align: left;
+}
+.modal-content label {
+  font-size: 1em;
+  color: var(--main-blue);
+  font-weight: 500;
+  margin-bottom: 0.2em;
+  display: block;
+}
+.modal-content input, .modal-content select {
+  width: 100%;
+  margin-bottom: 0.7em;
+  padding: 0.6em;
+  border-radius: 7px;
+  border: 1.2px solid var(--accent-blue);
+  font-size: 1em;
+  box-sizing: border-box;
+}
+.modal-content img.preview {
+  display: inline-block;
+  height: 48px;
+  margin: 0.2em 0.2em 0.2em 0;
+  border-radius: 7px;
+  border: 1px solid #eee;
+}
+#acc-map-preview img {
+  width: 200px;
+  border-radius: 7px;
+  margin: 4px 0;
+}
+
 @media (max-width: 600px) {
   main {
     padding: 0.5rem 0.1rem 1rem 0.1rem;

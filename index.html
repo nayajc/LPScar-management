@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSW 차량 관리 앱</title>
+  <title>LPS 차량 관리 앱</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="assets/emoji/car.png">
 </head>
 <body>
   <header>
-    <h1>🚗 NSW 차량 관리</h1>
+    <h1>🚗 LPS 차량 관리</h1>
     <div id="user-info"></div>
   </header>
   <main>
@@ -24,7 +24,7 @@
     </section>
     <section id="app-section" style="display:none;">
       <div class="car-list-header">
-        <h2>내 차량 목록 <span class="emoji">🚙</span></h2>
+        <h2>차량 목록 <span class="emoji">🚙</span></h2>
         <button id="add-car" class="btn blue">차량 추가 ➕</button>
       </div>
       <ul id="car-list"></ul>
@@ -43,8 +43,76 @@
     </section>
   </main>
   <footer>
-    <p>Made with <span class="emoji">💙</span> for Australia NSW</p>
+    <p>Made by <span class="emoji">💙</span> CowboybibimbapW</p>
   </footer>
+  <div id="maint-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>정비 내역 추가</h3>
+      <label>정비 날짜<br><input type="date" id="maint-date"></label><br>
+      <label>정비 종류<br>
+        <select id="maint-type">
+          <option value="정기점검">정기점검</option>
+          <option value="브레이크">브레이크</option>
+          <option value="엔진오일">엔진오일</option>
+          <option value="타이어">타이어</option>
+          <option value="기타">기타</option>
+        </select>
+      </label><br>
+      <label>비용(원)<br><input type="number" id="maint-cost" min="0" step="1000"></label><br>
+      <label>정비 내용<br><input type="text" id="maint-desc" maxlength="50"></label><br>
+      <div style="margin-top:1em;">
+        <button class="btn blue" id="maint-save">저장</button>
+        <button class="btn" id="maint-cancel">취소</button>
+      </div>
+    </div>
+  </div>
+  <div id="insurance-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>보험 내역 추가</h3>
+      <label>보험 종류<br>
+        <select id="insurance-type">
+          <option value="종합보험">종합보험</option>
+          <option value="그린슬립">그린슬립</option>
+          <option value="Roadside Assistance">Roadside Assistance</option>
+        </select>
+      </label><br>
+      <label>유효기간(만기일)<br><input type="date" id="insurance-expire"></label><br>
+      <div style="margin-top:1em;">
+        <button class="btn blue" id="insurance-save">저장</button>
+        <button class="btn" id="insurance-cancel">취소</button>
+      </div>
+    </div>
+  </div>
+  <div id="accident-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-height:90vh;overflow-y:auto;">
+      <h3>사고 기록 추가</h3>
+      <label>우리측 운전자 이름<br><input type="text" id="acc-my-name" maxlength="20"></label><br>
+      <label>우리측 운전자 전화번호<br><input type="tel" id="acc-my-phone" maxlength="20"></label><br>
+      <label>상대방 운전자 이름<br><input type="text" id="acc-other-name" maxlength="20"></label><br>
+      <label>상대방 운전자 전화번호<br><input type="tel" id="acc-other-phone" maxlength="20"></label><br>
+      <label>상대방 운전자 주소(선택)<br><input type="text" id="acc-other-addr" maxlength="50"></label><br>
+      <label>상대방 운전자 면허증 사진<br><input type="file" id="acc-other-license" accept="image/*"></label><br>
+      <label>사고차량 사진 (최대 10장)<br><input type="file" id="acc-car-photos" accept="image/*" multiple></label><br>
+      <label>사고 내용<br><input type="text" id="acc-desc" maxlength="100"></label><br>
+      <label>사고지 주소<br><input type="text" id="acc-address" maxlength="100"></label><br>
+      <div id="acc-map-preview" style="margin:0.5em 0;"></div>
+      <div style="margin-top:1em;">
+        <button class="btn blue" id="accident-save">저장</button>
+        <button class="btn" id="accident-cancel">취소</button>
+      </div>
+    </div>
+  </div>
+  <div id="doc-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>레조 문서 추가</h3>
+      <label>레조 서류 파일<br><input type="file" id="doc-file" accept="image/*,application/pdf"></label><br>
+      <label>레조 만기날짜<br><input type="date" id="doc-expire"></label><br>
+      <div style="margin-top:1em;">
+        <button class="btn blue" id="doc-save">저장</button>
+        <button class="btn" id="doc-cancel">취소</button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
 </body>
