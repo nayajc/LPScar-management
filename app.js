@@ -25,6 +25,9 @@ function renderCarList() {
     li.style.cursor = 'pointer';
     li.onclick = (e) => {
       if (e.target.tagName === 'BUTTON') return; // 삭제 버튼 클릭시 무시
+      // 모든 li에서 selected 제거
+      document.querySelectorAll('#car-list li').forEach(el => el.classList.remove('selected'));
+      li.classList.add('selected');
       showCarDetail(car);
     };
     carList.appendChild(li);
@@ -101,7 +104,7 @@ function daysLeft(dateStr) {
 // 정비 탭 렌더링 및 추가/삭제
 function renderMaintTab(data) {
   const maint = document.getElementById('maint');
-  maint.innerHTML = `<h3>정비 내역</h3>
+  maint.innerHTML = `<h3>정비 내역 <button class='btn' id='show-monthly-cost'>월별 정비 비용 보기</button></h3>
     <ul>${Object.entries(data).map(([key, m])=>{
       const d = daysLeft(m.date);
       const urgent = d <= 30 ? ` <span style='color:red;font-weight:bold;'>⚠️ ${d}일 남음</span>` : '';
@@ -146,6 +149,23 @@ function renderMaintTab(data) {
     document.getElementById('maint-cancel').onclick = () => {
       document.getElementById('maint-modal').style.display = 'none';
     };
+  };
+  // 월별 정비 비용 보기 기능
+  document.getElementById('show-monthly-cost').onclick = () => {
+    const monthly = {};
+    Object.values(data).forEach(m => {
+      if (!m.date || !m.cost) return;
+      const ym = m.date.slice(0,7); // YYYY-MM
+      const cost = parseInt(m.cost, 10) || 0;
+      if (!monthly[ym]) monthly[ym] = 0;
+      monthly[ym] += cost;
+    });
+    let html = '<h3>월별 정비 비용 합계</h3><table style="width:100%;margin-top:1em;"><tr><th>월</th><th>합계</th></tr>';
+    Object.entries(monthly).sort().forEach(([ym, sum]) => {
+      html += `<tr><td>${ym}</td><td style='text-align:right;'>${sum.toLocaleString()}원</td></tr>`;
+    });
+    html += '</table>';
+    showSimpleModal(html);
   };
 }
 window.removeMaint = async function(key) {
@@ -368,6 +388,11 @@ function showApp(user) {
   userInfo.innerHTML = `<span class="emoji">👤</span> ${user.displayName || user.email} <button class="btn" id="logout-btn">로그아웃</button>`;
   if (ADMIN_EMAILS.includes(user.email)) {
     userInfo.innerHTML += ` <button class="btn blue" onclick="showApproveModal()">회원 승인</button>`;
+    userInfo.innerHTML += ` <button class="btn blue" id="show-admin-stats">정비 통계</button>`;
+    setTimeout(() => {
+      const statsBtn = document.getElementById('show-admin-stats');
+      if (statsBtn) statsBtn.onclick = showAdminStats;
+    }, 0);
   }
   loadCarsFromDB();
   document.getElementById('logout-btn').onclick = () => signOut(auth);
@@ -496,4 +521,199 @@ if (typeof window !== 'undefined') {
   document.getElementById('approve-close').onclick = () => {
     document.getElementById('approve-modal').style.display = 'none';
   };
+}
+
+// 관리자 통계 모달 함수
+async function showAdminStats() {
+  // 모든 차량/정비 데이터 불러오기
+  const carsRef = dbRef(db, 'companyCars');
+  const carsSnap = await get(carsRef);
+  const carsData = carsSnap.val() || {};
+  // 차량별 월별 비용 집계 및 상세 내역 저장
+  let stats = {}; // { carName: { 'YYYY-MM': sum, ... }, ... }
+  let details = {}; // { carName: { 'YYYY-MM': [정비리스트] } }
+  for (const [carId, car] of Object.entries(carsData)) {
+    const maintRef = dbRef(db, `users/${currentUser.uid}/cars/${carId}/maintenances`);
+    const maintSnap = await get(maintRef);
+    const maints = maintSnap.val() || {};
+    for (const m of Object.values(maints)) {
+      if (!m.date || !m.cost) continue;
+      const ym = m.date.slice(0,7);
+      const cost = parseInt(m.cost, 10) || 0;
+      if (!stats[car.name]) stats[car.name] = {};
+      if (!stats[car.name][ym]) stats[car.name][ym] = 0;
+      stats[car.name][ym] += cost;
+      if (!details[car.name]) details[car.name] = {};
+      if (!details[car.name][ym]) details[car.name][ym] = [];
+      details[car.name][ym].push(m);
+    }
+  }
+  // 월 목록 추출
+  const allMonths = new Set();
+  Object.values(stats).forEach(carStats => Object.keys(carStats).forEach(m => allMonths.add(m)));
+  const months = Array.from(allMonths).sort();
+  const carNames = Object.keys(stats);
+  // 필터 UI
+  let html = `<h3>차량별 월별 정비 비용 통계 <button class='btn blue' id='download-excel'>엑셀 다운로드</button></h3>`;
+  html += `<div style='margin-bottom:1em;'>
+    <label>차량 <select id='filter-car'><option value=''>전체</option>${carNames.map(c=>`<option value='${c}'>${c}</option>`)}</select></label>
+    <label style='margin-left:1em;'>월 <select id='filter-month'><option value=''>전체</option>${months.map(m=>`<option value='${m}'>${m}</option>`)}</select></label>
+    <button class='btn' id='show-stats-chart' style='margin-left:1em;'>그래프 보기</button>
+  </div>`;
+  html += `<table style="width:100%;margin-top:1em;"><tr><th>차량명</th>`;
+  months.forEach(m => html += `<th>${m}</th>`);
+  html += '</tr>';
+  Object.entries(stats).forEach(([car, carStats]) => {
+    html += `<tr data-car='${car}'>`;
+    html += `<td>${car}</td>`;
+    months.forEach(m => {
+      if (carStats[m]) {
+        html += `<td data-month='${m}' style='text-align:right;cursor:pointer;color:#1976d2;font-weight:bold;' onclick="window.showMaintDetail('${car}','${m}')">${carStats[m].toLocaleString()}원</td>`;
+      } else {
+        html += `<td data-month='${m}'>-</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  showSimpleModal(html);
+  // 필터 기능
+  setTimeout(() => {
+    const carSel = document.getElementById('filter-car');
+    const monthSel = document.getElementById('filter-month');
+    const table = document.querySelector('#simple-modal table');
+    function applyFilter() {
+      const carVal = carSel.value;
+      const monthVal = monthSel.value;
+      table.querySelectorAll('tr[data-car]').forEach(tr => {
+        const showCar = !carVal || tr.getAttribute('data-car') === carVal;
+        tr.style.display = showCar ? '' : 'none';
+        if (showCar && monthVal) {
+          tr.querySelectorAll('td[data-month]').forEach(td => {
+            td.style.display = td.getAttribute('data-month') === monthVal ? '' : 'none';
+          });
+        } else if (showCar) {
+          tr.querySelectorAll('td[data-month]').forEach(td => { td.style.display = ''; });
+        }
+      });
+      // 헤더도 월 필터 적용
+      table.querySelectorAll('th').forEach((th, idx) => {
+        if (idx === 0) return;
+        const m = months[idx-1];
+        th.style.display = (!monthVal || m === monthVal) ? '' : 'none';
+      });
+    }
+    carSel.onchange = applyFilter;
+    monthSel.onchange = applyFilter;
+  }, 0);
+  // 엑셀 다운로드 기능
+  setTimeout(() => {
+    const btn = document.getElementById('download-excel');
+    if (btn) btn.onclick = () => downloadStatsExcel(stats, months, document.getElementById('filter-car').value, document.getElementById('filter-month').value);
+  }, 0);
+  // 상세 내역 함수 window에 노출
+  window.showMaintDetail = (car, ym) => {
+    const list = (details[car] && details[car][ym]) ? details[car][ym] : [];
+    let html = `<h3>${car} - ${ym} 정비 내역</h3><ul style='max-height:300px;overflow-y:auto;'>`;
+    if (list.length === 0) html += '<li>내역 없음</li>';
+    else list.forEach(m => {
+      html += `<li>${m.date} [${m.type||'기타'}] - ${m.desc} <span style='color:#1976d2;'>${m.cost ? m.cost+'원' : ''}</span> ${m.shop ? `<span style='color:#888;'>@${m.shop}</span>` : ''} ${m.etc ? `<span style='color:#888;'>${m.etc}</span>` : ''}</li>`;
+    });
+    html += '</ul>';
+    showSimpleModal(html);
+  };
+  // 그래프 보기 기능
+  setTimeout(() => {
+    const chartBtn = document.getElementById('show-stats-chart');
+    if (chartBtn) chartBtn.onclick = () => showStatsChart(stats, months, document.getElementById('filter-car').value, document.getElementById('filter-month').value);
+  }, 0);
+}
+// 엑셀 다운로드 함수 (필터 적용)
+function downloadStatsExcel(stats, months, filterCar, filterMonth) {
+  if (!window.XLSX) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js';
+    script.onload = () => downloadStatsExcel(stats, months, filterCar, filterMonth);
+    document.body.appendChild(script);
+    return;
+  }
+  const data = [];
+  const header = ['차량명'];
+  months.forEach(m => {
+    if (!filterMonth || m === filterMonth) header.push(m);
+  });
+  data.push(header);
+  Object.entries(stats).forEach(([car, carStats]) => {
+    if (filterCar && car !== filterCar) return;
+    const row = [car];
+    months.forEach(m => {
+      if (!filterMonth || m === filterMonth) row.push(carStats[m] ? carStats[m] : '');
+    });
+    data.push(row);
+  });
+  const ws = window.XLSX.utils.aoa_to_sheet(data);
+  const wb = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(wb, ws, '정비통계');
+  window.XLSX.writeFile(wb, '정비통계.xlsx');
+}
+
+// 심플 모달 함수 추가
+function showSimpleModal(html) {
+  let modal = document.getElementById('simple-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'simple-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `<div class='modal-content' style='max-width:350px;'><div id='simple-modal-content'></div><div style='margin-top:1em;text-align:center;'><button class='btn' id='simple-modal-close'>닫기</button></div></div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('simple-modal-content').innerHTML = html;
+  modal.style.display = 'flex';
+  document.getElementById('simple-modal-close').onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+// Chart.js 그래프 함수
+function showStatsChart(stats, months, filterCar, filterMonth) {
+  // Chart.js CDN 동적 로드
+  if (!window.Chart) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.onload = () => showStatsChart(stats, months, filterCar, filterMonth);
+    document.body.appendChild(script);
+    return;
+  }
+  // 데이터 준비
+  let labels = [];
+  let datasets = [];
+  if (filterCar) {
+    // 특정 차량의 월별 비용
+    labels = months.filter(m => !filterMonth || m === filterMonth);
+    const data = labels.map(m => stats[filterCar][m] || 0);
+    datasets = [{ label: filterCar, data, backgroundColor: '#1976d2' }];
+  } else {
+    // 전체 차량의 월별 비용(스택/그룹)
+    labels = months.filter(m => !filterMonth || m === filterMonth);
+    datasets = Object.keys(stats).map((car, idx) => ({
+      label: car,
+      data: labels.map(m => stats[car][m] || 0),
+      backgroundColor: `hsl(${(idx*60)%360},70%,60%)`
+    }));
+  }
+  // 모달에 캔버스 추가
+  let html = `<h3>정비 비용 그래프</h3><canvas id='stats-chart' width='350' height='220'></canvas>`;
+  showSimpleModal(html);
+  setTimeout(() => {
+    const ctx = document.getElementById('stats-chart').getContext('2d');
+    new window.Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        plugins: { legend: { display: true } },
+        responsive: false,
+        scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString()+'원' } } }
+      }
+    });
+  }, 100);
 }

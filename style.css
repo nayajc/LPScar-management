@@ -122,6 +122,15 @@ input[type="email"], input[type="password"] {
 #car-list li .emoji {
   margin-right: 0.5em;
 }
+#car-list li.selected {
+  background: #1976d2;
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.18);
+}
+#car-list li.selected .emoji {
+  filter: brightness(1.2) drop-shadow(0 0 2px #fff);
+}
 
 footer {
   text-align: center;
