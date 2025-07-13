@@ -239,4 +239,42 @@ footer {
     border-radius: 8px;
     margin-bottom: 0.2em;
   }
+  .car-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .car-list-header h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.3em;
+  }
+  #add-car, .btn.blue {
+    width: 100%;
+    font-size: 1rem;
+    padding: 12px 0;
+    margin-bottom: 8px;
+  }
+  #car-list {
+    padding: 0;
+  }
+  #car-list li {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1em 0.7em;
+    gap: 8px;
+    font-size: 1em;
+  }
+  #car-list li .emoji {
+    font-size: 1.5em;
+    margin-bottom: 2px;
+  }
+  #car-list li.selected {
+    font-size: 1.1em;
+  }
+  .btn {
+    width: 100%;
+    font-size: 1rem;
+    padding: 12px 0;
+    margin: 0.2em 0 0.2em 0;
+  }
 } 

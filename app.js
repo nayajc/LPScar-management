@@ -57,6 +57,7 @@ addCarBtn.addEventListener('click', () => {
 
 // 차량 삭제
 window.removeCar = function(id) {
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   const carRef = dbRef(db, `companyCars/${id}`);
   dbRemove(carRef);
 };
@@ -169,6 +170,7 @@ function renderMaintTab(data) {
   };
 }
 window.removeMaint = async function(key) {
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   await removeCarData(currentUser.uid, currentCar.id, 'maintenances', key);
 };
 
@@ -212,6 +214,7 @@ function renderInsuranceTab(data) {
   };
 }
 window.removeInsurance = async function(key) {
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   await removeCarData(currentUser.uid, currentCar.id, 'insurances', key);
 };
 
@@ -321,6 +324,7 @@ function renderAccidentTab(data) {
   };
 }
 window.removeAccident = async function(key) {
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   await removeCarData(currentUser.uid, currentCar.id, 'accidents', key);
 };
 
@@ -377,6 +381,7 @@ function renderDocsTab(data) {
   };
 }
 window.removeDoc = async function(key) {
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   await removeCarData(currentUser.uid, currentCar.id, 'documents', key);
 };
 
