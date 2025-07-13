@@ -111,7 +111,10 @@ function renderMaintTab(data) {
     <div style='font-size:0.95em;color:#888;margin-top:0.5em;'>만기 30일 이내 항목은 <span style='color:red;'>강조</span>됩니다.<br>이메일 알림은 추후 설정에서 활성화할 수 있습니다.</div>`;
   document.getElementById('add-maint-btn').onclick = () => {
     document.getElementById('maint-modal').style.display = 'flex';
-    document.getElementById('maint-save').onclick = async () => {
+    const saveBtn = document.getElementById('maint-save');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    newSaveBtn.onclick = async () => {
       const date = document.getElementById('maint-date').value;
       const type = document.getElementById('maint-type').value;
       const cost = document.getElementById('maint-cost').value;
@@ -128,15 +131,17 @@ function renderMaintTab(data) {
         alert('날짜와 내용을 입력하세요!');
         return;
       }
+      newSaveBtn.disabled = true;
       await addCarData(currentUser.uid, currentCar.id, 'maintenances', { date, type, cost, desc, shop, receipt: receiptUrl, etc });
       document.getElementById('maint-modal').style.display = 'none';
-      // 입력값 초기화
       document.getElementById('maint-date').value = '';
       document.getElementById('maint-type').value = '정기점검';
       document.getElementById('maint-cost').value = '';
       document.getElementById('maint-desc').value = '';
       document.getElementById('maint-shop').value = '';
       document.getElementById('maint-receipt').value = '';
+      document.getElementById('maint-etc').value = '';
+      newSaveBtn.disabled = false;
     };
     document.getElementById('maint-cancel').onclick = () => {
       document.getElementById('maint-modal').style.display = 'none';
@@ -154,28 +159,36 @@ function renderInsuranceTab(data) {
     <ul>${Object.entries(data).map(([key, i])=>{
       const d = daysLeft(i.expire);
       const urgent = d <= 30 ? ` <span style='color:red;font-weight:bold;'>⚠️ ${d}일 남음</span>` : '';
-      return `<li><b>[${i.type||'종합보험'}]</b> ${i.expire}${urgent} <button class='btn' onclick='removeInsurance("${key}")'>삭제</button></li>`;
+      return `<li><b>[${i.type||'종합보험'}]</b> ${i.expire}${i.company ? ` <span style='color:#1976d2;'>${i.company}</span>` : ''}${i.number ? ` <span style='color:#888;'>#${i.number}</span>` : ''}${urgent} <button class='btn' onclick='removeInsurance("${key}")'>삭제</button></li>`;
     }).join('')}</ul>
     <button class='btn blue' id='add-insurance-btn'>보험 추가</button>
     <div style='font-size:0.95em;color:#888;margin-top:0.5em;'>만기 30일 이내 항목은 <span style='color:red;'>강조</span>됩니다.<br>이메일 알림은 추후 설정에서 활성화할 수 있습니다.</div>`;
   document.getElementById('add-insurance-btn').onclick = () => {
     document.getElementById('insurance-modal').style.display = 'flex';
-  };
-  document.getElementById('insurance-cancel').onclick = () => {
-    document.getElementById('insurance-modal').style.display = 'none';
-  };
-  document.getElementById('insurance-save').onclick = async () => {
-    const type = document.getElementById('insurance-type').value;
-    const expire = document.getElementById('insurance-expire').value;
-    if (!type || !expire) {
-      alert('보험 종류와 만기일을 입력하세요!');
-      return;
-    }
-    await addCarData(currentUser.uid, currentCar.id, 'insurances', { type, expire });
-    document.getElementById('insurance-modal').style.display = 'none';
-    // 입력값 초기화
-    document.getElementById('insurance-type').value = '종합보험';
-    document.getElementById('insurance-expire').value = '';
+    const saveBtn = document.getElementById('insurance-save');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    newSaveBtn.onclick = async () => {
+      const type = document.getElementById('insurance-type').value;
+      const expire = document.getElementById('insurance-expire').value;
+      const company = document.getElementById('insurance-company').value;
+      const number = document.getElementById('insurance-number').value;
+      if (!type || !expire) {
+        alert('보험 종류와 만기일을 입력하세요!');
+        return;
+      }
+      newSaveBtn.disabled = true;
+      await addCarData(currentUser.uid, currentCar.id, 'insurances', { type, expire, company, number });
+      document.getElementById('insurance-modal').style.display = 'none';
+      document.getElementById('insurance-type').value = '종합보험';
+      document.getElementById('insurance-expire').value = '';
+      document.getElementById('insurance-company').value = '';
+      document.getElementById('insurance-number').value = '';
+      newSaveBtn.disabled = false;
+    };
+    document.getElementById('insurance-cancel').onclick = () => {
+      document.getElementById('insurance-modal').style.display = 'none';
+    };
   };
 }
 window.removeInsurance = async function(key) {
@@ -210,7 +223,6 @@ function renderAccidentTab(data) {
         mapDiv.innerHTML = '';
       }
     };
-    // 사진 미리보기
     document.getElementById('acc-other-license').onchange = function() {
       const file = this.files[0];
       const preview = this.parentNode;
@@ -229,7 +241,6 @@ function renderAccidentTab(data) {
     document.getElementById('acc-car-photos').onchange = function() {
       const files = Array.from(this.files).slice(0,10);
       const preview = this.parentNode;
-      // 기존 미리보기 삭제
       preview.querySelectorAll('img.preview').forEach(img=>img.remove());
       files.forEach(file => {
         const url = URL.createObjectURL(file);
@@ -239,8 +250,11 @@ function renderAccidentTab(data) {
         preview.appendChild(img);
       });
     };
-    // 저장 버튼 이벤트 안전하게 바인딩
-    document.getElementById('accident-save').onclick = async () => {
+    // 저장 버튼 안전하게 바인딩
+    const saveBtn = document.getElementById('accident-save');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    newSaveBtn.onclick = async () => {
       const myName = document.getElementById('acc-my-name').value;
       const myPhone = document.getElementById('acc-my-phone').value;
       const otherName = document.getElementById('acc-other-name').value;
@@ -250,12 +264,11 @@ function renderAccidentTab(data) {
       const address = document.getElementById('acc-address').value;
       const etc = document.getElementById('acc-etc').value;
       const date = new Date().toISOString().slice(0,10);
-      // 필수값 체크
       if (!myName || !myPhone || !otherName || !otherPhone || !desc || !address) {
         alert('필수 항목을 모두 입력하세요!');
         return;
       }
-      // 사진 업로드
+      newSaveBtn.disabled = true;
       let otherLicenseUrl = '';
       const otherLicenseFile = document.getElementById('acc-other-license').files[0];
       if (otherLicenseFile) {
@@ -273,7 +286,6 @@ function renderAccidentTab(data) {
         myName, myPhone, otherName, otherPhone, otherAddr, otherLicense: otherLicenseUrl, carPhotos: carPhotosUrls, desc, address, etc, date
       });
       document.getElementById('accident-modal').style.display = 'none';
-      // 입력값 초기화
       [
         'acc-my-name','acc-my-phone','acc-other-name','acc-other-phone','acc-other-addr','acc-desc','acc-address','acc-etc'
       ].forEach(id=>document.getElementById(id).value='');
@@ -281,6 +293,10 @@ function renderAccidentTab(data) {
       document.getElementById('acc-car-photos').value = '';
       document.getElementById('acc-map-preview').innerHTML = '';
       document.querySelectorAll('#acc-other-license + img, #acc-car-photos + img').forEach(img=>img.remove());
+      newSaveBtn.disabled = false;
+    };
+    document.getElementById('accident-cancel').onclick = () => {
+      document.getElementById('accident-modal').style.display = 'none';
     };
   };
 }
@@ -305,24 +321,34 @@ function renderDocsTab(data) {
     <button class='btn blue' id='add-doc-btn'>문서 추가</button>`;
   document.getElementById('add-doc-btn').onclick = () => {
     document.getElementById('doc-modal').style.display = 'flex';
-    document.getElementById('doc-save').onclick = async () => {
+    const saveBtn = document.getElementById('doc-save');
+    // 기존 이벤트 제거
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+    newSaveBtn.onclick = async () => {
       const fileInput = document.getElementById('doc-file');
       const expire = document.getElementById('doc-expire').value;
       if (!fileInput.files[0] || !expire) {
         alert('레조 서류 파일과 만기날짜를 모두 입력하세요!');
         return;
       }
+      newSaveBtn.disabled = true;
       let fileUrl = '';
-      if (fileInput.files[0]) {
+      try {
         const path = `users/${currentUser.uid}/cars/${currentCar.id}/documents/${Date.now()}_${fileInput.files[0].name}`;
         fileUrl = await uploadFile(path, fileInput.files[0]);
+        const uploader = currentUser.displayName || currentUser.email || 'Unknown';
+        await addCarData(currentUser.uid, currentCar.id, 'documents', { file: fileUrl, expire, uploader });
+        document.getElementById('doc-modal').style.display = 'none';
+        fileInput.value = '';
+        document.getElementById('doc-expire').value = '';
+      } catch (e) {
+        alert('저장 실패: ' + e.message);
       }
-      const uploader = currentUser.displayName || currentUser.email || 'Unknown';
-      await addCarData(currentUser.uid, currentCar.id, 'documents', { file: fileUrl, expire, uploader });
-      document.getElementById('doc-modal').style.display = 'none';
-      fileInput.value = '';
-      document.getElementById('doc-expire').value = '';
+      newSaveBtn.disabled = false;
     };
+
     document.getElementById('doc-cancel').onclick = () => {
       document.getElementById('doc-modal').style.display = 'none';
     };
