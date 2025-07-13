@@ -1,7 +1,7 @@
 import { auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase.js';
 import { db, addCarData, removeCarData, getCarData } from './firebase.js';
 import { storage, uploadFile } from './firebase.js';
-import { ref as dbRef, push as dbPush, set as dbSet } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { ref as dbRef, push as dbPush, set as dbSet, remove as dbRemove, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
 const ADMIN_EMAILS = ['nayajcsong@gmail.com', 'jknetwork001@gmail.com'];
 
@@ -15,16 +15,13 @@ const carList = document.getElementById('car-list');
 const addCarBtn = document.getElementById('add-car');
 
 // 임시 차량 데이터 (Firebase 연동 전)
-let cars = [
-  { id: 1, name: 'Hyundai i30', emoji: '🚙' },
-  { id: 2, name: 'Kia Carnival', emoji: '🚐' }
-];
+let cars = [];
 
 function renderCarList() {
   carList.innerHTML = '';
   cars.forEach(car => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="emoji">${car.emoji}</span> ${car.name} <button class="btn" onclick="removeCar(${car.id})">삭제</button>`;
+    li.innerHTML = `<span class="emoji">${car.emoji}</span> ${car.name} <button class="btn" onclick="removeCar('${car.id}')">삭제</button>`;
     li.style.cursor = 'pointer';
     li.onclick = (e) => {
       if (e.target.tagName === 'BUTTON') return; // 삭제 버튼 클릭시 무시
@@ -34,19 +31,32 @@ function renderCarList() {
   });
 }
 
-window.removeCar = function(id) {
-  cars = cars.filter(car => car.id !== id);
-  renderCarList();
-};
+// DB에서 차량 목록 불러오기
+function loadCarsFromDB() {
+  const carsRef = dbRef(db, 'companyCars');
+  onValue(carsRef, (snapshot) => {
+    const val = snapshot.val() || {};
+    cars = Object.entries(val).map(([id, car]) => ({ id, ...car }));
+    renderCarList();
+  });
+}
 
+// 차량 추가
 addCarBtn.addEventListener('click', () => {
   const name = prompt('차량 이름을 입력하세요!');
   if (name) {
     const emoji = prompt('차량 이모티콘(예: 🚗, 🚙, 🚐, 🛻)을 입력하세요!', '🚗');
-    cars.push({ id: Date.now(), name, emoji: emoji || '🚗' });
-    renderCarList();
+    const newCar = { name, emoji: emoji || '🚗' };
+    const carsRef = dbRef(db, 'companyCars');
+    dbPush(carsRef, newCar);
   }
 });
+
+// 차량 삭제
+window.removeCar = function(id) {
+  const carRef = dbRef(db, `companyCars/${id}`);
+  dbRemove(carRef);
+};
 
 let currentUser = null;
 let currentCar = null;
@@ -305,11 +315,12 @@ window.removeDoc = async function(key) {
 };
 
 // 로그인/로그아웃 UI 처리
+// 로그인 후 차량 목록 불러오기
 function showApp(user) {
   loginSection.style.display = 'none';
   appSection.style.display = 'block';
   userInfo.innerHTML = `<span class="emoji">👤</span> ${user.displayName || user.email} <button class="btn" id="logout-btn">로그아웃</button>`;
-  renderCarList();
+  loadCarsFromDB();
   document.getElementById('logout-btn').onclick = () => signOut(auth);
 }
 function showLogin() {
