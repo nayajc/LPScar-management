@@ -329,15 +329,17 @@ function renderDocsTab(data) {
     newSaveBtn.onclick = async () => {
       const fileInput = document.getElementById('doc-file');
       const expire = document.getElementById('doc-expire').value;
-      if (!fileInput.files[0] || !expire) {
-        alert('레조 서류 파일과 만기날짜를 모두 입력하세요!');
+      if (!expire) {
+        alert('레조 만기날짜를 입력하세요!');
         return;
       }
       newSaveBtn.disabled = true;
       let fileUrl = '';
       try {
-        const path = `users/${currentUser.uid}/cars/${currentCar.id}/documents/${Date.now()}_${fileInput.files[0].name}`;
-        fileUrl = await uploadFile(path, fileInput.files[0]);
+        if (fileInput.files[0]) {
+          const path = `users/${currentUser.uid}/cars/${currentCar.id}/documents/${Date.now()}_${fileInput.files[0].name}`;
+          fileUrl = await uploadFile(path, fileInput.files[0]);
+        }
         const uploader = currentUser.displayName || currentUser.email || 'Unknown';
         await addCarData(currentUser.uid, currentCar.id, 'documents', { file: fileUrl, expire, uploader });
         document.getElementById('doc-modal').style.display = 'none';
