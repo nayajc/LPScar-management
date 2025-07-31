@@ -34,13 +34,43 @@ function renderCarList() {
   });
 }
 
-// DB에서 차량 목록 불러오기
+function renderExpireAlerts() {
+  const alertsDiv = document.getElementById('expire-alerts');
+  let alerts = [];
+  cars.forEach(car => {
+    // 보험
+    if (car.insurances) {
+      Object.values(car.insurances).forEach(ins => {
+        if (ins.expire && daysLeft(ins.expire) <= 30) {
+          alerts.push(`🚨 <b>${car.name}</b> 차량의 보험(${ins.type})이 ${daysLeft(ins.expire)}일 후 만료됩니다!`);
+        }
+      });
+    }
+    // 문서
+    if (car.documents) {
+      Object.values(car.documents).forEach(doc => {
+        if (doc.expire && daysLeft(doc.expire) <= 30) {
+          alerts.push(`📄 <b>${car.name}</b> 차량의 레조 문서가 ${daysLeft(doc.expire)}일 후 만료됩니다!`);
+        }
+      });
+    }
+  });
+  if (alerts.length === 0) {
+    alertsDiv.innerHTML = `<div class="expire-alert no-alert">만료 임박 항목 없음</div>`;
+  } else {
+    alertsDiv.innerHTML = alerts.map(a => `<div class="expire-alert">${a}</div>`).join('');
+  }
+}
+// 차량 목록/보험/문서 데이터가 바뀔 때마다 renderExpireAlerts 호출
+// loadCarsFromDB, showApp, 보험/문서 추가/삭제 후 등에서 renderExpireAlerts() 호출
+// loadCarsFromDB 내부 마지막에 renderExpireAlerts() 호출
 function loadCarsFromDB() {
   const carsRef = dbRef(db, 'companyCars');
   onValue(carsRef, (snapshot) => {
     const val = snapshot.val() || {};
     cars = Object.entries(val).map(([id, car]) => ({ id, ...car }));
     renderCarList();
+    renderExpireAlerts();
   });
 }
 

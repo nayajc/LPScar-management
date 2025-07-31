@@ -220,6 +220,24 @@ footer {
   margin: 4px 0;
 }
 
+#expire-alerts {
+  margin-bottom: 1em;
+}
+.expire-alert {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-size: 1em;
+}
+.expire-alert.no-alert {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
 @media (max-width: 600px) {
   main {
     padding: 0.5rem 0.1rem 1rem 0.1rem;
