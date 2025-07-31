@@ -21,10 +21,9 @@ function renderCarList() {
   carList.innerHTML = '';
   cars.forEach(car => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="emoji">${car.emoji}</span> ${car.name} <button class="btn" onclick="removeCar('${car.id}')">삭제</button>`;
+    li.innerHTML = `<span class="emoji">${car.emoji}</span> ${car.name}`;
     li.style.cursor = 'pointer';
-    li.onclick = (e) => {
-      if (e.target.tagName === 'BUTTON') return; // 삭제 버튼 클릭시 무시
+    li.onclick = () => {
       // 모든 li에서 selected 제거
       document.querySelectorAll('#car-list li').forEach(el => el.classList.remove('selected'));
       li.classList.add('selected');
