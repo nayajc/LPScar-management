@@ -85,11 +85,29 @@ addCarBtn.addEventListener('click', () => {
   }
 });
 
-// 차량 삭제
-window.removeCar = function(id) {
-  if (!confirm('정말로 삭제하시겠습니까?')) return;
+// 차량 삭제 모달 기능
+const carDeleteBtn = document.getElementById('car-delete-btn');
+const carDeleteModal = document.getElementById('car-delete-modal');
+const carDeleteList = document.getElementById('car-delete-list');
+const carDeleteCancel = document.getElementById('car-delete-cancel');
+if (carDeleteBtn) {
+  carDeleteBtn.onclick = () => {
+    carDeleteList.innerHTML = cars.map(car =>
+      `<li><span class='emoji'>${car.emoji}</span> ${car.name} <button class='btn' onclick='window.deleteCarModal("${car.id}")'>삭제</button></li>`
+    ).join('');
+    carDeleteModal.style.display = 'flex';
+  };
+}
+if (carDeleteCancel) {
+  carDeleteCancel.onclick = () => {
+    carDeleteModal.style.display = 'none';
+  };
+}
+window.deleteCarModal = function(id) {
+  if (!confirm('정말로 이 차량을 삭제하시겠습니까?')) return;
   const carRef = dbRef(db, `companyCars/${id}`);
   dbRemove(carRef);
+  carDeleteModal.style.display = 'none';
 };
 
 let currentUser = null;

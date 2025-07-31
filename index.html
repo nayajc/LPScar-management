@@ -29,6 +29,16 @@
         <button id="add-car" class="btn blue">차량 추가 ➕</button>
       </div>
       <ul id="car-list"></ul>
+      <button id="car-delete-btn" class="btn" style="width:100%;margin-top:8px;background:#f44336;color:#fff;">차량 삭제</button>
+      <div id="car-delete-modal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:350px;">
+          <h3>삭제할 차량 선택</h3>
+          <ul id="car-delete-list"></ul>
+          <div style="margin-top:1em;text-align:center;">
+            <button class="btn" id="car-delete-cancel">취소</button>
+          </div>
+        </div>
+      </div>
       <div id="car-detail" style="display:none;">
         <div class="tabs">
           <button class="tab-btn active" data-tab="maint">정비 <span class="emoji">🛠️</span></button>
