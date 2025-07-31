@@ -54,6 +54,14 @@ function renderExpireAlerts() {
         }
       });
     }
+    // 정비 nextDate
+    if (car.maintenances) {
+      Object.values(car.maintenances).forEach(m => {
+        if (m.nextDate && daysLeft(m.nextDate) <= 30) {
+          alerts.push(`🛠️ <b>${car.name}</b> 차량의 정비(${m.type||'정비'}) 다음 정비일이 ${daysLeft(m.nextDate)}일 후 도래합니다!`);
+        }
+      });
+    }
   });
   if (alerts.length === 0) {
     alertsDiv.innerHTML = `<div class="expire-alert no-alert">만료 임박 항목 없음</div>`;
@@ -174,6 +182,7 @@ function renderMaintTab(data) {
       const shop = document.getElementById('maint-shop').value;
       const receiptInput = document.getElementById('maint-receipt');
       const etc = document.getElementById('maint-etc').value;
+      const nextDate = document.getElementById('maint-nextdate').value;
       let receiptUrl = '';
       if (receiptInput.files[0]) {
         const path = `users/${currentUser.uid}/cars/${currentCar.id}/maintenances/${Date.now()}_receipt_${receiptInput.files[0].name}`;
@@ -184,7 +193,7 @@ function renderMaintTab(data) {
         return;
       }
       newSaveBtn.disabled = true;
-      await addCarData(currentUser.uid, currentCar.id, 'maintenances', { date, type, cost, desc, shop, receipt: receiptUrl, etc });
+      await addCarData(currentUser.uid, currentCar.id, 'maintenances', { date, type, cost, desc, shop, receipt: receiptUrl, etc, nextDate });
       document.getElementById('maint-modal').style.display = 'none';
       document.getElementById('maint-date').value = '';
       document.getElementById('maint-type').value = '정기점검';
@@ -193,6 +202,7 @@ function renderMaintTab(data) {
       document.getElementById('maint-shop').value = '';
       document.getElementById('maint-receipt').value = '';
       document.getElementById('maint-etc').value = '';
+      document.getElementById('maint-nextdate').value = '';
       newSaveBtn.disabled = false;
     };
     document.getElementById('maint-cancel').onclick = () => {
